@@ -311,6 +311,82 @@ var handleAutoScaling = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
+var handleGuardDuty = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var detail = message.detail;
+  var severity = detail.severity;
+  var color = "good";
+
+  if (severity >= 7) {
+    color = "danger";
+  } else if (severity >= 4) {
+    color = "warning";
+  }
+
+  var fields = [
+    { "title": "Finding Type", "value": detail.type, "short": false },
+    { "title": "Description", "value": detail.description, "short": false },
+    { "title": "Severity", "value": severity + "/10", "short": true },
+    { "title": "Region", "value": detail.region, "short": true },
+    { "title": "Account", "value": message.account, "short": true },
+    { "title": "Count", "value": String(detail.service.count), "short": true }
+  ];
+
+  // Add instance details if present
+  var instance = detail.resource && detail.resource.instanceDetails;
+  if (instance && instance.instanceId) {
+    fields.push({ "title": "Instance ID", "value": instance.instanceId, "short": true });
+    fields.push({ "title": "Instance Type", "value": instance.instanceType, "short": true });
+  }
+
+  // Add remote IP details from port probe or network connection action
+  var action = detail.service && detail.service.action;
+  if (action) {
+    var remoteIp;
+    if (action.portProbeAction && action.portProbeAction.portProbeDetails && action.portProbeAction.portProbeDetails.length > 0) {
+      var probe = action.portProbeAction.portProbeDetails[0];
+      remoteIp = probe.remoteIpDetails;
+      if (probe.localPortDetails) {
+        fields.push({ "title": "Probed Port", "value": probe.localPortDetails.port + " (" + probe.localPortDetails.portName + ")", "short": true });
+      }
+    } else if (action.networkConnectionAction && action.networkConnectionAction.remoteIpDetails) {
+      remoteIp = action.networkConnectionAction.remoteIpDetails;
+    }
+    if (remoteIp) {
+      fields.push({ "title": "Remote IP", "value": remoteIp.ipAddressV4, "short": true });
+      if (remoteIp.country && remoteIp.country.countryName) {
+        fields.push({ "title": "Country", "value": remoteIp.country.countryName, "short": true });
+      }
+      if (remoteIp.organization && remoteIp.organization.org) {
+        fields.push({ "title": "Organization", "value": remoteIp.organization.org, "short": true });
+      }
+    }
+  }
+
+  fields.push({ "title": "First Seen", "value": detail.service.eventFirstSeen, "short": true });
+  fields.push({ "title": "Last Seen", "value": detail.service.eventLastSeen, "short": true });
+  fields.push({
+    "title": "Link",
+    "value": "https://console.aws.amazon.com/guardduty/home?region=" + detail.region + "#/findings?fId=" + detail.id,
+    "short": false
+  });
+
+  var slackMessage = {
+    text: "*AWS GuardDuty Finding*",
+    attachments: [
+      {
+        "color": color,
+        "title": detail.title,
+        "fields": fields,
+        "ts": timestamp
+      }
+    ]
+  };
+
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
 var handleCatchAll = function(event, context) {
 
     var record = event.Records[0]
@@ -390,6 +466,10 @@ var processEvent = function(event, context) {
   else if(eventSubscriptionArn.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsSubject.indexOf(config.services.autoscaling.match_text) > -1 || eventSnsMessageRaw.indexOf(config.services.autoscaling.match_text) > -1){
     console.log("processing autoscaling notification");
     slackMessage = handleAutoScaling(event, context);
+  }
+  else if(eventSnsMessage && eventSnsMessage.source === 'aws.guardduty'){
+    console.log("processing guardduty notification");
+    slackMessage = handleGuardDuty(event, context);
   }
   else{
     slackMessage = handleCatchAll(event, context);

@@ -1,0 +1,18 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:ecs-monitoring:00000000-0000-0000-0000-000000000000",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "00000000-0000-0000-0000-000000000001",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:ecs-monitoring",
+        "Timestamp": "2026-03-10T19:40:51.636Z",
+        "Subject": null,
+        "Message": "{\"version\":\"0\",\"id\":\"00000000-0000-0000-0000-000000000002\",\"detail-type\":\"ECS Task State Change\",\"source\":\"aws.ecs\",\"account\":\"123456789012\",\"time\":\"2026-03-10T19:40:51Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:ecs:us-east-1:123456789012:task/example-cluster/aabbccdd11223344556677889900aabb\"],\"detail\":{\"attachments\":[{\"id\":\"00000000-0000-0000-0000-000000000003\",\"type\":\"eni\",\"status\":\"DELETED\",\"details\":[{\"name\":\"subnetId\",\"value\":\"subnet-0123456789abcdef0\"},{\"name\":\"networkInterfaceId\",\"value\":\"eni-0123456789abcdef0\"},{\"name\":\"privateIPv4Address\",\"value\":\"172.30.0.7\"}]}],\"availabilityZone\":\"us-east-1a\",\"clusterArn\":\"arn:aws:ecs:us-east-1:123456789012:cluster/example-cluster\",\"connectivity\":\"CONNECTED\",\"containers\":[{\"containerArn\":\"arn:aws:ecs:us-east-1:123456789012:container/example-cluster/aabbccdd11223344556677889900aabb/00000000-0000-0000-0000-000000000004\",\"exitCode\":134,\"lastStatus\":\"STOPPED\",\"name\":\"example-api\",\"image\":\"123456789012.dkr.ecr.us-east-1.amazonaws.com/example/server:latest\",\"taskArn\":\"arn:aws:ecs:us-east-1:123456789012:task/example-cluster/aabbccdd11223344556677889900aabb\",\"networkInterfaces\":[],\"cpu\":\"0\"},{\"containerArn\":\"arn:aws:ecs:us-east-1:123456789012:container/example-cluster/aabbccdd11223344556677889900aabb/00000000-0000-0000-0000-000000000005\",\"exitCode\":0,\"lastStatus\":\"STOPPED\",\"name\":\"example-sidecar\",\"image\":\"123456789012.dkr.ecr.us-east-1.amazonaws.com/example/sidecar:latest\",\"taskArn\":\"arn:aws:ecs:us-east-1:123456789012:task/example-cluster/aabbccdd11223344556677889900aabb\",\"networkInterfaces\":[],\"cpu\":\"128\"}],\"cpu\":\"2048\",\"createdAt\":\"2026-03-10T19:25:12.581Z\",\"desiredStatus\":\"STOPPED\",\"executionStoppedAt\":\"2026-03-10T19:39:00.869Z\",\"group\":\"service:example-api\",\"launchType\":\"FARGATE\",\"lastStatus\":\"STOPPED\",\"memory\":\"4096\",\"overrides\":{\"containerOverrides\":[{\"name\":\"example-api\"},{\"name\":\"example-sidecar\"}]},\"platformVersion\":\"1.4.0\",\"startedAt\":\"2026-03-10T19:27:44.398Z\",\"startedBy\":\"ecs-svc/1234567890123456789\",\"stoppingAt\":\"2026-03-10T19:39:22.056Z\",\"stoppedAt\":\"2026-03-10T19:40:51.636Z\",\"stoppedReason\":\"Essential container in task exited\",\"stopCode\":\"EssentialContainerExited\",\"taskArn\":\"arn:aws:ecs:us-east-1:123456789012:task/example-cluster/aabbccdd11223344556677889900aabb\",\"taskDefinitionArn\":\"arn:aws:ecs:us-east-1:123456789012:task-definition/example-api:42\",\"updatedAt\":\"2026-03-10T19:40:51.636Z\",\"version\":9}}",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}

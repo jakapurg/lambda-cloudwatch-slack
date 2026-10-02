@@ -1,0 +1,18 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "EventVersion": "1.0",
+      "EventSubscriptionArn": "arn:aws:sns:us-east-1:123456789012:ecr-monitoring:00000000-0000-0000-0000-000000000000",
+      "Sns": {
+        "Type": "Notification",
+        "MessageId": "00000000-0000-0000-0000-000000000011",
+        "TopicArn": "arn:aws:sns:us-east-1:123456789012:ecr-monitoring",
+        "Timestamp": "2026-10-02T12:12:31.636Z",
+        "Subject": null,
+        "Message": "{\"version\":\"0\",\"id\":\"00000000-0000-0000-0000-000000000010\",\"detail-type\":\"ECR Image Scan\",\"source\":\"aws.ecr\",\"account\":\"123456789012\",\"time\":\"2026-10-02T12:12:31Z\",\"region\":\"us-east-1\",\"resources\":[\"arn:aws:ecr:us-east-1:123456789012:repository/example/server\"],\"detail\":{\"scan-status\":\"COMPLETE\",\"repository-name\":\"example/server\",\"image-digest\":\"sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\"image-tags\":[\"12208e89\"],\"finding-severity-counts\":{\"CRITICAL\":6,\"HIGH\":41,\"MEDIUM\":43,\"LOW\":10}}}",
+        "MessageAttributes": {}
+      }
+    }
+  ]
+}

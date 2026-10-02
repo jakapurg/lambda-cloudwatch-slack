@@ -387,6 +387,132 @@ var handleGuardDuty = function(event, context) {
   return _.merge(slackMessage, baseSlackMessage);
 };
 
+var handleEcs = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var detail = message.detail;
+  var lastStatus = detail.lastStatus;
+  var desiredStatus = detail.desiredStatus;
+  var stoppedReason = detail.stoppedReason || "N/A";
+  var color = "good";
+
+  if (lastStatus === "STOPPED" && desiredStatus === "STOPPED") {
+    // Check if any container exited with non-zero code
+    var failedContainers = (detail.containers || []).filter(function(c) {
+      return c.exitCode !== 0 && c.exitCode !== undefined;
+    });
+    if (failedContainers.length > 0 || detail.stopCode === "EssentialContainerExited") {
+      color = "danger";
+    } else {
+      color = "warning";
+    }
+  } else if (lastStatus === "RUNNING") {
+    color = "good";
+  } else {
+    color = "warning";
+  }
+
+  // Extract cluster and service names
+  var clusterArn = detail.clusterArn || "";
+  var clusterName = clusterArn.split("/").pop();
+  var group = detail.group || "";
+  var serviceName = group.replace("service:", "");
+  var taskArn = detail.taskArn || "";
+  var taskId = taskArn.split("/").pop();
+  var taskDefArn = detail.taskDefinitionArn || "";
+  var taskDef = taskDefArn.split("/").pop();
+  var region = message.region;
+
+  var fields = [
+    { "title": "Cluster", "value": clusterName, "short": true },
+    { "title": "Service", "value": serviceName, "short": true },
+    { "title": "Task Definition", "value": taskDef, "short": true },
+    { "title": "Status", "value": lastStatus, "short": true }
+  ];
+
+  if (lastStatus === "STOPPED") {
+    fields.push({ "title": "Stop Code", "value": detail.stopCode || "N/A", "short": true });
+    fields.push({ "title": "Stopped Reason", "value": stoppedReason, "short": false });
+  }
+
+  // Add container details
+  var containers = detail.containers || [];
+  containers.forEach(function(container) {
+    var status = container.lastStatus;
+    if (container.exitCode !== undefined) {
+      status += " (exit code: " + container.exitCode + ")";
+    }
+    fields.push({ "title": "Container: " + container.name, "value": status, "short": true });
+  });
+
+  fields.push({
+    "title": "Link to Task",
+    "value": "https://console.aws.amazon.com/ecs/v2/clusters/" + clusterName + "/tasks/" + taskId + "?region=" + region,
+    "short": false
+  });
+
+  var slackMessage = {
+    text: "*AWS ECS Task State Change*",
+    attachments: [
+      {
+        "color": color,
+        "fields": fields,
+        "ts": timestamp
+      }
+    ]
+  };
+
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
+var handleEcrScan = function(event, context) {
+  var timestamp = (new Date(event.Records[0].Sns.Timestamp)).getTime()/1000;
+  var message = JSON.parse(event.Records[0].Sns.Message);
+  var detail = message.detail;
+  var counts = detail['finding-severity-counts'] || {};
+  var repository = detail['repository-name'];
+  var tags = detail['image-tags'] || [];
+  var color = "good";
+
+  if (counts.CRITICAL > 0) {
+    color = "danger";
+  } else if (counts.HIGH > 0) {
+    color = "warning";
+  }
+
+  var fields = [
+    { "title": "Repository", "value": repository, "short": true },
+    { "title": "Tags", "value": tags.length > 0 ? tags.join(", ") : "untagged", "short": true },
+    { "title": "Critical", "value": String(counts.CRITICAL || 0), "short": true },
+    { "title": "High", "value": String(counts.HIGH || 0), "short": true },
+    { "title": "Medium", "value": String(counts.MEDIUM || 0), "short": true },
+    { "title": "Low", "value": String(counts.LOW || 0), "short": true }
+  ];
+
+  if (detail['scan-status'] !== "COMPLETE") {
+    fields.push({ "title": "Scan Status", "value": detail['scan-status'], "short": true });
+  }
+
+  fields.push({
+    "title": "Link to Findings",
+    "value": "https://console.aws.amazon.com/ecr/repositories/private/" + message.account + "/" + repository + "/_/image/" + detail['image-digest'] + "/details?region=" + message.region,
+    "short": false
+  });
+
+  var slackMessage = {
+    text: "*AWS ECR Image Scan*",
+    attachments: [
+      {
+        "color": color,
+        "fields": fields,
+        "ts": timestamp
+      }
+    ]
+  };
+
+  return _.merge(slackMessage, baseSlackMessage);
+};
+
 var handleCatchAll = function(event, context) {
 
     var record = event.Records[0]
@@ -470,6 +596,14 @@ var processEvent = function(event, context) {
   else if(eventSnsMessage && eventSnsMessage.source === 'aws.guardduty'){
     console.log("processing guardduty notification");
     slackMessage = handleGuardDuty(event, context);
+  }
+  else if(eventSnsMessage && eventSnsMessage.source === 'aws.ecs' && eventSnsMessage['detail-type'] === 'ECS Task State Change'){
+    console.log("processing ecs task state change notification");
+    slackMessage = handleEcs(event, context);
+  }
+  else if(eventSnsMessage && eventSnsMessage.source === 'aws.ecr' && eventSnsMessage['detail-type'] === 'ECR Image Scan'){
+    console.log("processing ecr image scan notification");
+    slackMessage = handleEcrScan(event, context);
   }
   else{
     slackMessage = handleCatchAll(event, context);

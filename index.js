@@ -471,7 +471,8 @@ var handleEcrScan = function(event, context) {
   var detail = message.detail;
   var counts = detail['finding-severity-counts'] || {};
   var repository = detail['repository-name'];
-  var tags = detail['image-tags'] || [];
+  var digest = detail['image-digest'] || "";
+  var findingsUrl = "https://console.aws.amazon.com/ecr/repositories/private/" + message.account + "/" + repository + "/_/image/" + digest + "/details?region=" + message.region;
   var color = "good";
 
   if (counts.CRITICAL > 0) {
@@ -481,8 +482,7 @@ var handleEcrScan = function(event, context) {
   }
 
   var fields = [
-    { "title": "Repository", "value": repository, "short": true },
-    { "title": "Tags", "value": tags.length > 0 ? tags.join(", ") : "untagged", "short": true },
+    { "title": "Repository", "value": repository, "short": false },
     { "title": "Critical", "value": String(counts.CRITICAL || 0), "short": true },
     { "title": "High", "value": String(counts.HIGH || 0), "short": true },
     { "title": "Medium", "value": String(counts.MEDIUM || 0), "short": true },
@@ -490,12 +490,13 @@ var handleEcrScan = function(event, context) {
   ];
 
   if (detail['scan-status'] !== "COMPLETE") {
+    color = "danger";
     fields.push({ "title": "Scan Status", "value": detail['scan-status'], "short": true });
   }
 
   fields.push({
     "title": "Link to Findings",
-    "value": "https://console.aws.amazon.com/ecr/repositories/private/" + message.account + "/" + repository + "/_/image/" + detail['image-digest'] + "/details?region=" + message.region,
+    "value": "<" + findingsUrl + "|View in ECR console>",
     "short": false
   });
 
